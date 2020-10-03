@@ -1,3 +1,6 @@
 pandas
 matplotlib
 sklearn
+sentencepiece
+transformers
+tqdm
