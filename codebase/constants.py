@@ -1,0 +1,4 @@
+SEG_ID_A = 0
+SEG_ID_CLS = 1
+SEG_ID_PAD = 2
+

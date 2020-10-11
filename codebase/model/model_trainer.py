@@ -10,13 +10,12 @@ from torch.optim import Adam
 from torch.utils.data import TensorDataset, RandomSampler, DataLoader, SequentialSampler
 from tqdm import tqdm, trange
 from transformers import XLNetTokenizer, XLNetForSequenceClassification
-
-from codebase.constants import SEG_ID_A, SEG_ID_CLS, SEG_ID_PAD
-from codebase.util import accuracy
-from codebase.settings import XLNET_BASE_PATH, VOCABULARY_PATH
-from codebase.model.inputs import get_inputs
-
 from transformers import logging
+
+from codebase.model.model_data_handler import get_inputs, get_dataloader
+from codebase.settings import XLNET_BASE_PATH, VOCABULARY_PATH
+from codebase.util import accuracy
+
 logging.set_verbosity_error()
 
 
@@ -25,13 +24,16 @@ class ModelTrainer:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_gpu = torch.cuda.device_count()
     batch_num = 32
+    TAG2IDX_FILENAME = "tag2idx.bin"
+    CONFIG_FILENAME = "config.json"
+    PYTORCH_MODEL_NAME = "pytorch_model.bin"
 
-    def create_dataloaders(self, input_csv):
+    def split_into_dataloaders(self, input_csv):
         """
         :param input_csv: csv with two columns named text and labels
         :return:
         """
-        print("Loading data from csv")
+        print("Loading data from csv...")
 
         df = pd.read_csv(input_csv)
 
@@ -40,11 +42,7 @@ class ModelTrainer:
 
         self.tag2idx = {t: i for i, t in enumerate(set(labels))}
 
-        self.tokenizer = XLNetTokenizer(vocab_file=str(VOCABULARY_PATH), do_lower_case=False)
-        self.CLS_ID = self.tokenizer.encode("<cls>")[0]
-        self.SEP_ID = self.tokenizer.encode("<sep>")[0]
-
-        print("Setting input embedding")
+        print("Setting input embedding...")
 
         full_input_ids = []
         full_input_masks = []
@@ -59,8 +57,7 @@ class ModelTrainer:
 
         tags = [self.tag2idx[str(lab)] for lab in labels]
 
-        print("Splitting data into tensors")
-
+        # split the data
         (
             tr_inputs,
             val_inputs,
@@ -79,57 +76,39 @@ class ModelTrainer:
             test_size=0.3,
         )
 
-        tr_inputs = torch.tensor(tr_inputs)
-        val_inputs = torch.tensor(val_inputs)
-        tr_tags = torch.tensor(tr_tags)
-        val_tags = torch.tensor(val_tags)
-        tr_masks = torch.tensor(tr_masks)
-        val_masks = torch.tensor(val_masks)
-        tr_segs = torch.tensor(tr_segs)
-        val_segs = torch.tensor(val_segs)
+        print("Getting dataloaders...")
 
-        # Set token, attention and segment embeddings
-        train_data = TensorDataset(tr_inputs, tr_masks, tr_segs, tr_tags)
-        train_sampler = RandomSampler(train_data)
+        train_dataloader = get_dataloader(tr_inputs, tr_masks, tr_segs, batch_num, ßtr_tags)
+        valid_dataloader = get_dataloader(val_inputs, val_masks, val_segs, val_tags)
 
-        self.train_dataloader = DataLoader(
-            train_data, sampler=train_sampler, batch_size=self.batch_num, drop_last=True
-        )
+        return train_dataloader, valid_dataloader
 
-        valid_data = TensorDataset(val_inputs, val_masks, val_segs, val_tags)
-        valid_sampler = SequentialSampler(valid_data)
-        self.valid_dataloader = DataLoader(
-            valid_data, sampler=valid_sampler, batch_size=self.batch_num
-        )
-
-
-
-    def train_model(self, model_folder, save_model=True, epochs=5, max_grad_norm=1.0):
+    def train_model(self, model_folder, train_dataloader, epochs=5, max_grad_norm=1.0):
         """
         :param save_folder: where to save the model
         :param model_name: the name the model will receive
         :param save_model:  whether to save the model or not
         :return:
         """
-        print("Train model")
+        print("Preparing for training...")
 
-        model = XLNetForSequenceClassification.from_pretrained(
+        self.model = XLNetForSequenceClassification.from_pretrained(
             XLNET_BASE_PATH, num_labels=len(self.tag2idx)
         )
 
-        model.to(ModelTrainer.device)
+        self.model.to(ModelTrainer.device)
         if ModelTrainer.n_gpu > 1:
-            model = torch.nn.DataParallel(model)
+            self.model = torch.nn.DataParallel(self.model)
 
         # Calculate train optimization num
         num_train_optimization_steps = (
-            int(math.ceil(len(self.train_dataloader.dataset) / self.batch_num) / 1)
+            int(math.ceil(len(train_dataloader.dataset) / self.batch_num) / 1)
             * epochs
         )
 
         # Fine tune model all layer parameters
 
-        param_optimizer = list(model.named_parameters())
+        param_optimizer = list(self.model.named_parameters())
         no_decay = ["bias", "gamma", "beta"]
         optimizer_grouped_parameters = [
             {
@@ -148,22 +127,22 @@ class ModelTrainer:
 
         optimizer = Adam(optimizer_grouped_parameters, lr=3e-5)
 
-        model.train()
+        self.model.train()
 
         print("----- Running training -----")
-        print("  Num examples = %d" % (len(self.train_dataloader.dataset)))
+        print("  Num examples = %d" % (len(train_dataloader.dataset)))
         print("  Batch size = %d" % (self.batch_num))
         print("  Num steps = %d" % (num_train_optimization_steps))
         for _ in trange(epochs, desc="Epoch"):
             self.tr_loss = 0
             nb_tr_examples, self.nb_tr_steps = 0, 0
-            for step, batch in enumerate(self.train_dataloader):
+            for step, batch in enumerate(train_dataloader):
                 # add batch to gpu
                 batch = tuple(t.to(ModelTrainer.device) for t in batch)
                 b_input_ids, b_input_mask, b_segs, b_labels = batch
 
                 # forward pass
-                outputs = model(
+                outputs = self.model(
                     input_ids=b_input_ids,
                     token_type_ids=b_segs,
                     input_mask=b_input_mask,
@@ -184,7 +163,7 @@ class ModelTrainer:
 
                 # gradient clipping
                 torch.nn.utils.clip_grad_norm_(
-                    parameters=model.parameters(), max_norm=max_grad_norm
+                    parameters=self.model.parameters(), max_norm=max_grad_norm
                 )
 
                 # update parameters
@@ -194,32 +173,35 @@ class ModelTrainer:
             # print train loss per epoch
             print("Train loss: {}".format(self.tr_loss / self.nb_tr_steps))
 
+    def save_model(self, model_folder):
+        if not self.model:
+            print('No model to save.')
+            return
+
         # Make save folder if it does not exists
         if not os.path.exists(model_folder):
             os.makedirs(model_folder)
 
         # Save a trained model, configuration and tokenizer
         model_to_save = (
-            model.module if hasattr(model, "module") else model
-        )  # Only save the model it-self
+            self.model.module if hasattr(self.model, "module") else self.model
+        )
 
-        # If we save using the predefined names, we can load using `from_pretrained`
-        output_model_file = os.path.join(model_folder,  "pytorch_model.bin")
-        output_config_file = os.path.join(model_folder, "config.json")
-        tag2idx_file = os.path.join(model_folder, "tag2idx.bin")
+        output_model_file = os.path.join(model_folder,  ModelTrainer.PYTORCH_MODEL_NAME)
+        output_config_file = os.path.join(model_folder, ModelTrainer.CONFIG_FILENAME)
+        tag2idx_file = os.path.join(model_folder, ModelTrainer.TAG2IDX_FILENAME)
 
-        if save_model:
-            print('Saving the model')
+        print('Saving the model')
 
-            # Save model into file
-            torch.save(model_to_save.state_dict(), output_model_file)
-            model_to_save.config.to_json_file(output_config_file)
-            self.tokenizer.save_vocabulary(model_folder)
+        # Save model into file
+        torch.save(model_to_save.state_dict(), output_model_file)
+        model_to_save.config.to_json_file(output_config_file)
 
-            # save tag2idx pickle
-            torch.save(self.tag2idx, tag2idx_file)
 
-    def evaluate_model(self, model_folder):
+        # save tag2idx pickle
+        torch.save(self.tag2idx, tag2idx_file)
+
+    def evaluate_model(self, model_folder, valid_dataloader):
         """
 
         :param model_folder: the folder of the model
@@ -248,9 +230,9 @@ class ModelTrainer:
         y_predict = []
 
         print("----- Running evaluation -----")
-        print("  Num examples ={}".format(self.valid_dataloader.dataset))
+        print("  Num examples ={}".format(valid_dataloader.dataset))
         print("  Batch size = {}".format(self.batch_num))
-        for step, batch in enumerate(self.valid_dataloader):
+        for step, batch in enumerate(valid_dataloader):
             batch = tuple(t.to(ModelTrainer.device) for t in batch)
             b_input_ids, b_input_mask, b_segs, b_labels = batch
 
@@ -281,7 +263,7 @@ class ModelTrainer:
             nb_eval_steps += 1
 
         eval_loss = eval_loss / nb_eval_steps
-        eval_accuracy = eval_accuracy / len(self.valid_dataloader.dataset)
+        eval_accuracy = eval_accuracy / len(valid_dataloader.dataset)
         loss = self.tr_loss / self.nb_tr_steps
         result = {"eval_loss": eval_loss, "eval_accuracy": eval_accuracy, "loss": loss}
         report = classification_report(

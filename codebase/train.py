@@ -24,9 +24,10 @@ def main(input_csv, save_folder, model_name):
 
     model_folder = os.path.join(save_folder, model_name)
 
-    trainer.create_dataloaders(input_csv)
-    trainer.train_model(model_folder, epochs=1)
-    trainer.evaluate_model(model_folder)
+    train_dataloader, valid_dataloader = trainer.split_into_dataloaders(input_csv)
+    trainer.train_model(model_folder, train_dataloader, epochs=1)
+    trainer.evaluate_model(model_folder, valid_dataloader)
+    trainer.save_model()
 
 
 if __name__ == "__main__":

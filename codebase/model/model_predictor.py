@@ -2,78 +2,63 @@ import pickle
 import os
 import numpy as np
 import torch
-from torch.utils.data import TensorDataset, SequentialSampler, DataLoader
 from tqdm import tqdm
-from transformers import XLNetForSequenceClassification, XLNetTokenizer
-from codebase.model.inputs import get_inputs
+from transformers import XLNetForSequenceClassification
 from codebase.tokenizerwrapper import TokenizerWrapper
+from codebase.model.model_data_handler import get_dataloader, get_inputs
 
 class ModelPredictor:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    batch_num = 32
 
     def __init__(self, model_folder):
         self.model_folder = model_folder
 
     def predict(self, sentence):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        n_gpu = torch.cuda.device_count()
+        TAG2IDX_FILENAME = "tag2idx.bin"
+        tag2idx_file = os.path.join(self.model_folder, TAG2IDX_FILENAME)
 
-
-        tag2idx_file = os.path.join(self.model_folder, "tag2idx.bin")
+        if not os.path.exists(tag2idx_file):
+            print(f'{tag2idx_file} file does not exist')
         self.tag2idx = torch.load(tag2idx_file)
-
-
 
         tag2name = {self.tag2idx[key]: key for key in self.tag2idx.keys()}
 
         model = XLNetForSequenceClassification.from_pretrained(
             self.model_folder, num_labels=len(tag2name)
         )
-        model.to(device)
-
+        model.to(ModelPredictor.device)
         model.eval()
-
 
         sentences = [sentence]
 
         print("Setting input embedding")
 
+        input = []
+        masks = []
+        segs = []
 
-        max_len = 64
-
-        full_input_ids = []
-        full_input_masks = []
-        full_segment_ids = []
-
-        self.tokenizer = TokenizerWrapper().tokenizer
+        self.tokenizer = TokenizerWrapper(self.model_folder).tokenizer
 
 
         for i, sentence in tqdm(enumerate(sentences), total=len(sentences)):
-            input_ids, input_mask, segment_ids = get_inputs(sentence)
+            input_ids, input_mask, segment_ids = get_inputs(sentence, self.model_folder)
 
+            input.append(input_ids)
+            masks.append(input_mask)
+            segs.append(segment_ids)
 
-            full_input_ids.append(input_ids)
-            full_input_masks.append(input_mask)
-            full_segment_ids.append(segment_ids)
-
-        inputs = torch.tensor(full_input_ids)
-        masks = torch.tensor(full_input_masks)
-        segs = torch.tensor(full_segment_ids)
-
-        # Set batch num
-        batch_num = 32
-
-        data = TensorDataset(inputs, masks, segs)
-        sampler = SequentialSampler(data)
-        dataloader = DataLoader(data, sampler=sampler, batch_size=batch_num)
+        dataloader = get_dataloader(input, masks, segs, ModelPredictor.batch_num)
 
         nb_eval_steps, nb_eval_examples = 0, 0
 
         y_predict = []
         print("***** Running evaluation *****")
-        print("  Num examples ={}".format(len(inputs)))
-        print("  Batch size = {}".format(batch_num))
+        print("  Num examples ={}".format(len(input)))
+        print("  Batch size = {}".format(ModelPredictor.batch_num))
+
         for step, batch in enumerate(dataloader):
-            batch = tuple(t.to(device) for t in batch)
+            batch = tuple(t.to(ModelPredictor.device) for t in batch)
             b_input_ids, b_input_mask, b_segs = batch
 
             with torch.no_grad():
@@ -93,11 +78,14 @@ class ModelPredictor:
 
             nb_eval_steps += 1
 
-        for pred in y_predict:
-            tp = lookup_hierarchy(tag2name[pred])
-            print(f'Level 1: {tp[0]}')
-            print(f'Level 2: {tp[1]}')
-            print(f'Level 3: {tp[2]}')
+        print_classification(y_predict, tag2name)
+
+def print_classification(y_predict, tag2name):
+    for pred in y_predict:
+        tp = lookup_hierarchy(tag2name[pred])
+        print(f'Level 1: {tp[0]}')
+        print(f'Level 2: {tp[1]}')
+        print(f'Level 3: {tp[2]}')
 
 
 def lookup_hierarchy(l3_label):

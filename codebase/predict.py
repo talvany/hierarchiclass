@@ -25,7 +25,7 @@ def main(sentence, save_folder, model_name):
     model_folder = os.path.join(save_folder, model_name)
 
     predictor = ModelPredictor(model_folder)
-    print(sentence)
+    print(f"Sentence to predict:\n{sentence}\n")
 
     predictor.predict(sentence)
 
