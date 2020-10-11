@@ -4,22 +4,24 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from transformers import XLNetForSequenceClassification
-from codebase.tokenizerwrapper import TokenizerWrapper
 from codebase.model.model_data_handler import get_dataloader, get_inputs
+from codebase.constants import BATCH_NUM, TAG2IDX_FILENAME
+from codebase.settings import LOOKUP_PKL_FILENAME
+from codebase.log import logger
 
 class ModelPredictor:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    batch_num = 32
 
     def __init__(self, model_folder):
         self.model_folder = model_folder
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.hierarchy_lookup_dict = load_lookup_dict_from_pkl(LOOKUP_PKL_FILENAME)
 
-    def predict(self, sentence):
-        TAG2IDX_FILENAME = "tag2idx.bin"
+    def predict(self, sentences):
         tag2idx_file = os.path.join(self.model_folder, TAG2IDX_FILENAME)
 
         if not os.path.exists(tag2idx_file):
-            print(f'{tag2idx_file} file does not exist')
+            raise IOError(f"{tag2idx_file} file does not exist")
+
         self.tag2idx = torch.load(tag2idx_file)
 
         tag2name = {self.tag2idx[key]: key for key in self.tag2idx.keys()}
@@ -27,38 +29,31 @@ class ModelPredictor:
         model = XLNetForSequenceClassification.from_pretrained(
             self.model_folder, num_labels=len(tag2name)
         )
-        model.to(ModelPredictor.device)
+        model.to(self.device)
         model.eval()
 
-        sentences = [sentence]
-
-        print("Setting input embedding")
+        logger.info("Setting input embedding")
 
         input = []
         masks = []
         segs = []
 
-        self.tokenizer = TokenizerWrapper(self.model_folder).tokenizer
-
-
         for i, sentence in tqdm(enumerate(sentences), total=len(sentences)):
-            input_ids, input_mask, segment_ids = get_inputs(sentence, self.model_folder)
+            input_ids, input_mask, segment_ids = get_inputs(sentence)
 
             input.append(input_ids)
             masks.append(input_mask)
             segs.append(segment_ids)
 
-        dataloader = get_dataloader(input, masks, segs, ModelPredictor.batch_num)
+        dataloader = get_dataloader(input, masks, segs, BATCH_NUM)
 
         nb_eval_steps, nb_eval_examples = 0, 0
 
         y_predict = []
-        print("***** Running evaluation *****")
-        print("  Num examples ={}".format(len(input)))
-        print("  Batch size = {}".format(ModelPredictor.batch_num))
+        logger.info("Running evaluation...")
 
         for step, batch in enumerate(dataloader):
-            batch = tuple(t.to(ModelPredictor.device) for t in batch)
+            batch = tuple(t.to(self.device) for t in batch)
             b_input_ids, b_input_mask, b_segs = batch
 
             with torch.no_grad():
@@ -75,25 +70,39 @@ class ModelPredictor:
             for predict in np.argmax(logits, axis=1):
                 y_predict.append(predict)
 
-
             nb_eval_steps += 1
 
-        print_classification(y_predict, tag2name)
-
-def print_classification(y_predict, tag2name):
-    for pred in y_predict:
-        tp = lookup_hierarchy(tag2name[pred])
-        print(f'Level 1: {tp[0]}')
-        print(f'Level 2: {tp[1]}')
-        print(f'Level 3: {tp[2]}')
+        print_classification(sentences, y_predict, tag2name, self.hierarchy_lookup_dict)
 
 
-def lookup_hierarchy(l3_label):
-    filename = 'misc/hierarchy_lookup_dict.pkl'
+def print_classification(sentences, y_predict, tag2name, hierarchy_lookup_dict):
+    """
+    Print the classification
+    :param sentences: the sentences that were classifier
+    :param y_predict: the predictions
+    :param tag2name: a lookup for the labels
+    :param hierarchy_lookup_dict: a lookup for the hierarchy
+    :return:
+    """
+    for i in range(len(y_predict)):
+        logger.info(sentences[i])
+        tp = hierarchy_lookup_dict[tag2name[y_predict[i]]]
+        logger.info(f"Level 1: {tp[0]}")
+        logger.info(f"Level 2: {tp[1]}")
+        logger.info(f"Level 3: {tp[2]}")
+        logger.info("")
 
-    with open(filename, 'rb') as infile:
-        new_dict = pickle.load(infile)
-    return new_dict[l3_label]
+
+def load_lookup_dict_from_pkl(filename):
+    """
+    Loads the pickle for hierarchy lookup
+    :return: the dictionary
+    """
+    if not os.path.exists(filename):
+        raise IOError(f"{filename} file does not exist")
+
+    with open(LOOKUP_PKL_FILENAME, "rb") as infile:
+        return pickle.load(infile)
 
 
 def accuracy(out, labels):

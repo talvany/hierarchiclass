@@ -1,10 +1,9 @@
 import click
-from transformers import logging
+import transformers
 import os
+from codebase.log import logger
 
 from codebase.model.model_predictor import ModelPredictor
-
-logging.set_verbosity_error()
 
 
 @click.command()
@@ -20,15 +19,15 @@ logging.set_verbosity_error()
 @click.option(
     "--model-name", required=True, help="The name given to the model", type=click.STRING
 )
-
 def main(sentence, save_folder, model_name):
+    # joins the path of the model folder
     model_folder = os.path.join(save_folder, model_name)
 
     predictor = ModelPredictor(model_folder)
-    print(f"Sentence to predict:\n{sentence}\n")
+    logger.info(f"Sentence to predict:")
+    logger.info(f"{sentence}")
 
-    predictor.predict(sentence)
-
+    predictor.predict([sentence])
 
 
 if __name__ == "__main__":

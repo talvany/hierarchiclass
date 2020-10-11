@@ -1,3 +1,4 @@
+
 import click
 import os
 from codebase.model.model_trainer import ModelTrainer
@@ -20,13 +21,15 @@ from codebase.model.model_trainer import ModelTrainer
     "--model-name", required=True, help="The name given to the model", type=click.STRING
 )
 def main(input_csv, save_folder, model_name):
-    trainer = ModelTrainer()
-
+    # joins the path of the model folder
     model_folder = os.path.join(save_folder, model_name)
 
+    trainer = ModelTrainer(model_folder)
+
     train_dataloader, valid_dataloader = trainer.split_into_dataloaders(input_csv)
-    trainer.train_model(model_folder, train_dataloader, epochs=1)
-    trainer.evaluate_model(model_folder, valid_dataloader)
+
+    trainer.train_model(train_dataloader, epochs=1)
+    trainer.evaluate_model(valid_dataloader)
     trainer.save_model()
 
 
