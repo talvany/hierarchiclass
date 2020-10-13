@@ -24,7 +24,7 @@ def main():
         # ('1vAhqiJXBTHp2sb4fOegJrKhZzM3RIGYc','../data/training_balanced.csv'),
         # ('1E0lL9ZHwNtwZJsVo6iLirNJ7gtkOgFjr', '../data/training_c2.csv'),
 
-        # ('18hwo7ParTOvlV9WpPrb38Ox73DcCOnYV', '../data/training_c3.csv'),
+        ('18hwo7ParTOvlV9WpPrb38Ox73DcCOnYV', '../data/training_c3.csv'),
         # ('1BBAUiCQnwjK42Fz2Kaih-DmCoVJX6Dtn', '../data/training_c6.csv'),
         ('1dKL9O6W75s3qsVQw56C8T8XeeAKIY4ir', '../data/training_c7.csv'),
 

@@ -28,9 +28,9 @@ def main(input_csv, save_folder, model_name):
 
     train_dataloader, valid_dataloader = trainer.split_into_dataloaders(input_csv)
 
-    trainer.train_model(train_dataloader)
-    trainer.evaluate_model(valid_dataloader)
+    trainer.train_model(train_dataloader, epochs=1)
     trainer.save_model()
+    trainer.evaluate_model(valid_dataloader)
 
 
 if __name__ == "__main__":
