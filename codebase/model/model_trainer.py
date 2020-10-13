@@ -135,7 +135,7 @@ class ModelTrainer:
         logger.info("  Num examples = %d" % (len(train_dataloader.dataset)))
         logger.info("  Batch size = %d" % (BATCH_NUM))
         logger.info("  Num steps = %d" % (num_train_optimization_steps))
-        for _ in trange(epochs, desc="Epoch"):
+        for i in trange(epochs, desc="Epoch"):
             self.tr_loss = 0
             nb_tr_examples, self.nb_tr_steps = 0, 0
             for step, batch in enumerate(train_dataloader):
@@ -173,6 +173,7 @@ class ModelTrainer:
                 optimizer.zero_grad()
 
             # print train loss per epoch
+            logger.info("Epoch: {}".format(i))
             logger.info("Train loss: {}".format(self.tr_loss / self.nb_tr_steps))
 
     def save_model(self):
