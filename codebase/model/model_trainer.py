@@ -139,7 +139,8 @@ class ModelTrainer:
             self.tr_loss = 0
             self.nb_tr_steps = 0
             for step, batch in enumerate(train_dataloader):
-                logger.info(f"step {self.nb_tr_steps}")
+                if self.nb_tr_steps % 100 == 0:
+                    logger.info(f"Step {self.nb_tr_steps}")
                 # add batch to gpu
                 batch = tuple(t.to(self.device) for t in batch)
                 b_input_ids, b_input_mask, b_segs, b_labels = batch
