@@ -2,7 +2,7 @@ import click
 import transformers
 import os
 from codebase.log import logger
-
+from codebase.util import print_classification
 from codebase.model.model_predictor import ModelPredictor
 
 
@@ -27,7 +27,9 @@ def main(sentence, save_folder, model_name):
     logger.info(f"Sentence to predict:")
     logger.info(f"{sentence}")
 
-    predictor.predict([sentence])
+    tps = predictor.predict([sentence])
+    print_classification([sentence], tps)
+
 
 
 if __name__ == "__main__":

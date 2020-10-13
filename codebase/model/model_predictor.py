@@ -72,25 +72,8 @@ class ModelPredictor:
 
             nb_eval_steps += 1
 
-        print_classification(sentences, y_predict, tag2name, self.hierarchy_lookup_dict)
-
-
-def print_classification(sentences, y_predict, tag2name, hierarchy_lookup_dict):
-    """
-    Print the classification
-    :param sentences: the sentences that were classifier
-    :param y_predict: the predictions
-    :param tag2name: a lookup for the labels
-    :param hierarchy_lookup_dict: a lookup for the hierarchy
-    :return:
-    """
-    for i in range(len(y_predict)):
-        logger.info(sentences[i])
-        tp = hierarchy_lookup_dict[tag2name[y_predict[i]]]
-        logger.info(f"Level 1: {tp[0]}")
-        logger.info(f"Level 2: {tp[1]}")
-        logger.info(f"Level 3: {tp[2]}")
-        logger.info("")
+        tps = [self.hierarchy_lookup_dict[tag2name[pred]] for pred in y_predict]
+        return tps
 
 
 def load_lookup_dict_from_pkl(filename):

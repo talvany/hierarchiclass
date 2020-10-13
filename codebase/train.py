@@ -28,7 +28,7 @@ def main(input_csv, save_folder, model_name):
 
     train_dataloader, valid_dataloader = trainer.split_into_dataloaders(input_csv)
 
-    trainer.train_model(train_dataloader, epochs=1)
+    trainer.train_model(train_dataloader)
     trainer.evaluate_model(valid_dataloader)
     trainer.save_model()
 

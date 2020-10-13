@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import TensorDataset, RandomSampler, SequentialSampler, DataLoader
 
-from codebase.tokenizer_wrapper import TokenizerWrapperSingleton
+from codebase.model.tokenizer_wrapper import TokenizerWrapperSingleton
 from codebase.constants import SEG_ID_PAD, SEG_ID_CLS, SEG_ID_A, MAX_LEN
 
 
