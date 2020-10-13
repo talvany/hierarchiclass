@@ -22,9 +22,9 @@ def main():
     gdrive_ids = [
         # ('1kdFlCq9VWsQBhRBlijPis3a2Vhv220p5','../data/classification_dataset.csv'),
         # ('1vAhqiJXBTHp2sb4fOegJrKhZzM3RIGYc','../data/training_balanced.csv'),
-        ('1E0lL9ZHwNtwZJsVo6iLirNJ7gtkOgFjr', '../temp/c2.csv')
+        ('1E0lL9ZHwNtwZJsVo6iLirNJ7gtkOgFjr', '../data/c2.csv')
     ]
-    download_data(gdrive_ids, False)
+    download_data(gdrive_ids, download_xlnet=True)
     print('Finished downloading data')
 
 if __name__ == "__main__":
