@@ -137,8 +137,9 @@ class ModelTrainer:
         logger.info("  Num steps = %d" % (num_train_optimization_steps))
         for i in trange(epochs, desc="Epoch"):
             self.tr_loss = 0
-            nb_tr_examples, self.nb_tr_steps = 0, 0
+            self.nb_tr_steps = 0
             for step, batch in enumerate(train_dataloader):
+                logger.info(f"step {self.nb_tr_steps}")
                 # add batch to gpu
                 batch = tuple(t.to(self.device) for t in batch)
                 b_input_ids, b_input_mask, b_segs, b_labels = batch
@@ -160,7 +161,6 @@ class ModelTrainer:
 
                 # track train loss
                 self.tr_loss += loss.item()
-                nb_tr_examples += b_input_ids.size(0)
                 self.nb_tr_steps += 1
 
                 # gradient clipping
@@ -174,6 +174,8 @@ class ModelTrainer:
 
             # print train loss per epoch
             logger.info("Epoch: {}".format(i))
+            logger.info("self.tr_loss: {}".format(self.tr_loss))
+            logger.info("self.nb_tr_steps: {}".format(self.nb_tr_steps))
             logger.info("Train loss: {}".format(self.tr_loss / self.nb_tr_steps))
 
     def save_model(self):
