@@ -7,7 +7,6 @@ import torch
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from torch.optim import Adam
-from torch.utils.data import TensorDataset, RandomSampler, DataLoader, SequentialSampler
 from tqdm import tqdm, trange
 from transformers import XLNetTokenizer, XLNetForSequenceClassification
 from codebase.constants import (
@@ -17,8 +16,8 @@ from codebase.constants import (
     BATCH_NUM,
 )
 from codebase.model.model_data_handler import get_inputs, get_dataloader, generate_dataloader_input
-from codebase.settings import XLNET_BASE_PATH, VOCABULARY_PATH
-from codebase.util import accuracy
+from codebase.settings import XLNET_BASE_PATH
+from codebase.util import accuracy, get_existing_tag2idx
 from codebase.log import logger
 
 
@@ -29,6 +28,7 @@ class ModelTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_gpu = torch.cuda.device_count()
         self.tag2idx = None
+        self.tr_loss = None
 
     def split_into_dataloaders(self, input_csv):
         """
@@ -200,11 +200,23 @@ class ModelTrainer:
         :param model_name: the name of the model
         :return:
         """
+
+        eval_general_metrics, class_report = self.get_reports(dataloader)
+        results_string = self.get_printed_eval_results(eval_general_metrics, class_report)
+
+        # Save the file report
+        output_eval_file = os.path.join(self.model_folder, output_results_filename)
+        logger.info(results_string)
+
+        with open(output_eval_file, "w") as writer:
+            writer.write(results_string)
+            
+
+    def get_reports(self, dataloader):
         logger.info("Loading model for evaluation...")
 
         if not self.tag2idx:
-            tag2idx_file = os.path.join(self.model_folder, "tag2idx.bin")
-            self.tag2idx = torch.load(tag2idx_file)
+            self.tag2idx = get_existing_tag2idx(self.model_folder)
 
         model = XLNetForSequenceClassification.from_pretrained(
             self.model_folder, num_labels=len(self.tag2idx)
@@ -256,20 +268,25 @@ class ModelTrainer:
 
         eval_loss = eval_loss / nb_eval_steps
         eval_accuracy = eval_accuracy / len(dataloader.dataset)
-        loss = self.tr_loss / self.nb_tr_steps
-        result = {"eval_loss": eval_loss, "eval_accuracy": eval_accuracy, "loss": loss}
-        report = classification_report(
+
+
+        eval_general_metrics = {"eval_loss": eval_loss, "eval_accuracy": eval_accuracy}
+
+        # if the object has the training model, we can extract th training loss
+        if self.tr_loss:
+            loss = self.tr_loss / self.nb_tr_steps
+            eval_general_metrics["loss"] = loss
+
+        class_report = classification_report(
             y_pred=np.array(y_predict), y_true=np.array(y_true)
         )
 
-        # Save the file report
-        output_eval_file = os.path.join(self.model_folder, output_results_filename)
-        with open(output_eval_file, "w") as writer:
-            logger.info("----- Evaluation results -----")
-            for key in sorted(result.keys()):
-                logger.info("  %s = %s" % (key, str(result[key])))
-                writer.write("%s = %s\n" % (key, str(result[key])))
+        return eval_general_metrics, class_report
 
-            logger.info(report)
-            writer.write("\n\n")
-            writer.write(report)
+
+    def get_printed_eval_results(self, general_metrics, report):
+        printed_eval_results = "----- Evaluation results -----"
+        for key in sorted(general_metrics.keys()):
+            printed_eval_results += "\n  %s = %s" % (key, str(general_metrics[key]))
+        printed_eval_results += "\n{report}"
+
