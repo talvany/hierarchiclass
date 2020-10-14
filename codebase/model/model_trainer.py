@@ -46,7 +46,7 @@ class ModelTrainer:
 
         logger.info("Setting input embedding...")
 
-        full_input_ids, full_input_masks, full_segment_ids, tags = generate_dataloader_input(sentences, labels, tag2idx)
+        full_input_ids, full_input_masks, full_segment_ids, tags = generate_dataloader_input(sentences, labels, self.tag2idx)
 
         # split the data
         (
