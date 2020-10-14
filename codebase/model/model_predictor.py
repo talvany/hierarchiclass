@@ -5,8 +5,9 @@ import torch
 from tqdm import tqdm
 from transformers import XLNetForSequenceClassification
 from codebase.model.model_data_handler import get_dataloader, generate_dataloader_input
-from codebase.constants import BATCH_NUM, TAG2IDX_FILENAME
+from codebase.constants import BATCH_NUM
 from codebase.settings import LOOKUP_PKL_FILENAME
+from codebase.util import get_existing_tag2idx
 from codebase.log import logger
 
 class ModelPredictor:
@@ -17,13 +18,7 @@ class ModelPredictor:
         self.hierarchy_lookup_dict = load_lookup_dict_from_pkl(LOOKUP_PKL_FILENAME)
 
     def predict(self, sentences):
-        tag2idx_file = os.path.join(self.model_folder, TAG2IDX_FILENAME)
-
-        if not os.path.exists(tag2idx_file):
-            raise IOError(f"{tag2idx_file} file does not exist")
-
-        self.tag2idx = torch.load(tag2idx_file)
-
+        self.tag2idx = get_existing_tag2idx(self.model_folder)
         tag2name = {self.tag2idx[key]: key for key in self.tag2idx.keys()}
 
         model = XLNetForSequenceClassification.from_pretrained(

@@ -1,5 +1,5 @@
 """
-Evaluates a dataset in a model
+Evaluates a dataset (usually the test set) in a model
 """
 
 import click
@@ -12,11 +12,12 @@ from transformers import XLNetForSequenceClassification
 import pandas as pd
 from codebase.model.model_data_handler import get_inputs, get_dataloader, generate_dataloader_input
 
-from codebase.constants import BATCH_NUM, TAG2IDX_FILENAME
+from codebase.constants import BATCH_NUM
 from codebase.log import logger
 from codebase.model.model_data_handler import get_dataloader, get_inputs
 from codebase.model.model_trainer import ModelTrainer
 from codebase.settings import LOOKUP_PKL_FILENAME
+from codebase.util import get_existing_tag2idx
 
 
 @click.command()
@@ -35,21 +36,19 @@ from codebase.settings import LOOKUP_PKL_FILENAME
 @click.option(
     "--model-name", required=True, help="The name given to the model", type=click.STRING
 )
-def main(test_set, save_folder, model_name):
+@click.option(
+    "--label-column-name", default="l3", help="The name of the column containing the labels", type=click.STRING
+)
+def main(test_set, save_folder, model_name, label_column_name='labels'):
     # joins the path of the model folder
     model_folder = os.path.join(save_folder, model_name)
 
     test_df = pd.read_csv(test_set)
 
     sentences = test_df.text.to_list()
-    labels = test_df.l3.to_list()
+    labels = test_df[label_column_name].to_list()
 
-    tag2idx_file = os.path.join(model_folder, TAG2IDX_FILENAME)
-
-    if not os.path.exists(tag2idx_file):
-        raise IOError(f"{tag2idx_file} file does not exist")
-
-    tag2idx = torch.load(tag2idx_file)
+    tag2idx = get_existing_tag2idx(model_folder)
 
     logger.info("Setting input embedding...")
 

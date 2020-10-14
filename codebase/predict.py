@@ -23,19 +23,20 @@ from codebase.model.model_predictor_multimodel import ModelPredictorMultiModel
 @click.option(
     "--model-name", required=True, help="The name given to the model", type=click.STRING
 )
-def main(sentence, save_folder, model_name):
-    # joins the path of the model folder
-    model_folder = os.path.join(save_folder, model_name)
+@click.option('--multimodel', default=False,
+              help="Whether to use the multimodel approach", type=click.BOOL)
+def main(sentence, save_folder, model_name, multimodel):
 
-    # predictor = ModelPredictor(model_folder)
-    predictor = ModelPredictorMultiModel(save_folder) # TODO FIX
-
-    logger.info(f"Sentence to predict:")
-    logger.info(f"{sentence}")
+    if multimodel:
+        predictor = ModelPredictorMultiModel(save_folder)
+    else:
+        # if it's the single model approach
+        model_folder = os.path.join(save_folder, model_name)
+        predictor = ModelPredictor(model_folder)
 
     tps = predictor.predict([sentence])
-    print(tps)
-    # print_classification([sentence], tps)
+
+    print_classification([sentence], tps)
 
 
 if __name__ == "__main__":
