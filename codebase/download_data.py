@@ -11,7 +11,7 @@ import tarfile
 import os
 
 
-def download_data(gdrive_ids, download_xlnet=True, multimodel=False):
+def download_data(gdrive_ids, download_xlnet=True, multimodel=False, balanced=False):
     if download_xlnet:
         path_base = (
             "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-base-cased"
@@ -28,6 +28,18 @@ def download_data(gdrive_ids, download_xlnet=True, multimodel=False):
         doc_id = '1-hvWGEeRECSK8WQPwfzjlSePf3MUjFnI'
         directory = "../models/out/"
         file_name = "multiclass.tar.gz"
+        file_path = os.path.join(directory, file_name)
+
+        url = f"https://drive.google.com/uc?id={doc_id}"
+        gdown.download(url, file_path, quiet=False)
+
+        with tarfile.open(file_path) as my_tar:
+            my_tar.extractall(directory)
+
+    if balanced:
+        doc_id = "1IDQ-cuqCIqPrZ15V49L9TnggvBSZXc3_"
+        directory = "../models/out/"
+        file_name = "balanced.tar.gz"
         file_path = os.path.join(directory, file_name)
 
         url = f"https://drive.google.com/uc?id={doc_id}"
@@ -56,7 +68,7 @@ def main():
         # ("1dKL9O6W75s3qsVQw56C8T8XeeAKIY4ir", "../data/training_c7.csv"),
         # ("1vAhqiJXBTHp2sb4fOegJrKhZzM3RIGYc", "../data/training_balanced.csv"),
     ]
-    download_data(gdrive_ids, download_xlnet=False, multimodel=True)
+    download_data(gdrive_ids, download_xlnet=False, multimodel=True, balanced=True)
     print("Finished downloading data")
 
 
