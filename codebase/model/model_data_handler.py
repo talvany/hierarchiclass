@@ -3,7 +3,30 @@ from torch.utils.data import TensorDataset, RandomSampler, SequentialSampler, Da
 
 from codebase.model.tokenizer_wrapper import TokenizerWrapperSingleton
 from codebase.constants import SEG_ID_PAD, SEG_ID_CLS, SEG_ID_A, MAX_LEN
+from tqdm import tqdm
 
+def generate_dataloader_input(sentences, labels=None, tag2idx=None):
+    """
+    Generate the inputs for creating a dataloader
+    :param sentences:
+    :return:
+    """
+    full_input_ids = []
+    full_input_masks = []
+    full_segment_ids = []
+
+    for _, sentence in tqdm(enumerate(sentences), total=len(sentences)):
+        input_ids, input_mask, segment_ids = get_inputs(sentence)
+
+        full_input_ids.append(input_ids)
+        full_input_masks.append(input_mask)
+        full_segment_ids.append(segment_ids)
+
+    if labels and tag2idx:
+        tags = [tag2idx[str(lab)] for lab in labels]
+        return full_input_ids, full_input_masks, full_segment_ids, tags
+    else:
+        return full_input_ids, full_input_masks, full_segment_ids
 
 def get_inputs(sentence):
     """

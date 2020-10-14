@@ -1,3 +1,6 @@
+"""
+Settings for the application
+"""
 import os
 from pathlib import Path
 

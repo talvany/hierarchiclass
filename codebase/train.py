@@ -1,4 +1,6 @@
-
+"""
+Trains a model
+"""
 import click
 import os
 from codebase.model.model_trainer import ModelTrainer

@@ -16,7 +16,7 @@ from codebase.constants import (
     PYTORCH_MODEL_NAME,
     BATCH_NUM,
 )
-from codebase.model.model_data_handler import get_inputs, get_dataloader
+from codebase.model.model_data_handler import get_inputs, get_dataloader, generate_dataloader_input
 from codebase.settings import XLNET_BASE_PATH, VOCABULARY_PATH
 from codebase.util import accuracy
 from codebase.log import logger
@@ -28,6 +28,7 @@ class ModelTrainer:
         self.model_folder = model_folder
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_gpu = torch.cuda.device_count()
+        self.tag2idx = None
 
     def split_into_dataloaders(self, input_csv):
         """
@@ -45,18 +46,7 @@ class ModelTrainer:
 
         logger.info("Setting input embedding...")
 
-        full_input_ids = []
-        full_input_masks = []
-        full_segment_ids = []
-
-        for _, sentence in tqdm(enumerate(sentences), total=len(sentences)):
-            input_ids, input_mask, segment_ids = get_inputs(sentence)
-
-            full_input_ids.append(input_ids)
-            full_input_masks.append(input_mask)
-            full_segment_ids.append(segment_ids)
-
-        tags = [self.tag2idx[str(lab)] for lab in labels]
+        full_input_ids, full_input_masks, full_segment_ids, tags = generate_dataloader_input(sentences, labels, tag2idx)
 
         # split the data
         (
@@ -175,8 +165,6 @@ class ModelTrainer:
 
             # print train loss per epoch
             logger.info("Epoch: {}".format(i))
-            logger.info("self.tr_loss: {}".format(self.tr_loss))
-            logger.info("self.nb_tr_steps: {}".format(self.nb_tr_steps))
             logger.info("Train loss: {}".format(self.tr_loss / self.nb_tr_steps))
 
     def save_model(self):
@@ -205,9 +193,9 @@ class ModelTrainer:
         # save tag2idx pickle
         torch.save(self.tag2idx, tag2idx_file)
 
-    def evaluate_model(self, valid_dataloader):
+    def evaluate_model(self, dataloader, output_results_filename="eval_results.txt"):
         """
-
+        Evaluates the model
         :param model_folder: the folder of the model
         :param model_name: the name of the model
         :return:
@@ -215,7 +203,7 @@ class ModelTrainer:
         logger.info("Loading model for evaluation...")
 
         if not self.tag2idx:
-            tag2idx_file = os.path.join(self.model_folder, "tag2idx.json")
+            tag2idx_file = os.path.join(self.model_folder, "tag2idx.bin")
             self.tag2idx = torch.load(tag2idx_file)
 
         model = XLNetForSequenceClassification.from_pretrained(
@@ -234,9 +222,9 @@ class ModelTrainer:
         y_predict = []
 
         logger.info("----- Running evaluation -----")
-        logger.info("  Num examples ={}".format(len(valid_dataloader.dataset)))
+        logger.info("  Num examples ={}".format(len(dataloader.dataset)))
         logger.info("  Batch size = {}".format(BATCH_NUM))
-        for step, batch in enumerate(valid_dataloader):
+        for step, batch in enumerate(dataloader):
             batch = tuple(t.to(self.device) for t in batch)
             b_input_ids, b_input_mask, b_segs, b_labels = batch
 
@@ -267,7 +255,7 @@ class ModelTrainer:
             nb_eval_steps += 1
 
         eval_loss = eval_loss / nb_eval_steps
-        eval_accuracy = eval_accuracy / len(valid_dataloader.dataset)
+        eval_accuracy = eval_accuracy / len(dataloader.dataset)
         loss = self.tr_loss / self.nb_tr_steps
         result = {"eval_loss": eval_loss, "eval_accuracy": eval_accuracy, "loss": loss}
         report = classification_report(
@@ -275,7 +263,7 @@ class ModelTrainer:
         )
 
         # Save the file report
-        output_eval_file = os.path.join(self.model_folder, "eval_results.txt")
+        output_eval_file = os.path.join(self.model_folder, output_results_filename)
         with open(output_eval_file, "w") as writer:
             logger.info("----- Evaluation results -----")
             for key in sorted(result.keys()):

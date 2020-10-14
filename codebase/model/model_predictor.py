@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from transformers import XLNetForSequenceClassification
-from codebase.model.model_data_handler import get_dataloader, get_inputs
+from codebase.model.model_data_handler import get_dataloader, generate_dataloader_input
 from codebase.constants import BATCH_NUM, TAG2IDX_FILENAME
 from codebase.settings import LOOKUP_PKL_FILENAME
 from codebase.log import logger
@@ -34,17 +34,7 @@ class ModelPredictor:
 
         logger.info("Setting input embedding")
 
-        input = []
-        masks = []
-        segs = []
-
-        for i, sentence in tqdm(enumerate(sentences), total=len(sentences)):
-            input_ids, input_mask, segment_ids = get_inputs(sentence)
-
-            input.append(input_ids)
-            masks.append(input_mask)
-            segs.append(segment_ids)
-
+        input, masks, segs = generate_dataloader_input(sentences)
         dataloader = get_dataloader(input, masks, segs, BATCH_NUM)
 
         nb_eval_steps, nb_eval_examples = 0, 0
@@ -86,8 +76,3 @@ def load_lookup_dict_from_pkl(filename):
 
     with open(LOOKUP_PKL_FILENAME, "rb") as infile:
         return pickle.load(infile)
-
-
-def accuracy(out, labels):
-    outputs = np.argmax(out, axis=1)
-    return np.sum(outputs == labels)

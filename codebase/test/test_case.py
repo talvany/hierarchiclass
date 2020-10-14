@@ -1,8 +1,4 @@
 SENTENCE_LISTS_CASES = [
-    # (
-    #     "Nigella's meringue pie is really a showstopper.",
-    #     ("Agent", "Person", "Chef")
-    # ),
     (
         "Acharya Vijay Vallabh Suri was a Jain monk. He is also known as Punjab Kesari. He was a disciple of Vijayanandsuri. He worked for the religious as well as improving the social life of people. He worked actively in Punjab.",
         ("Agent", "Person", "Religious")
