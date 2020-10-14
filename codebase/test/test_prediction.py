@@ -1,7 +1,7 @@
 import pytest
 from codebase.test.test_case import SENTENCE_LISTS_CASES
 from codebase import predict
-from codebase.model.model_predictor import ModelPredictor
+from codebase.model.model_predictor_single_model import ModelPredictorSingleModel
 
 
 class TestPrediction(object):
@@ -9,7 +9,7 @@ class TestPrediction(object):
     @pytest.fixture()
     def predictor(self):
         model_folder = "models/out/balanced"
-        predictor = ModelPredictor(model_folder)
+        predictor = ModelPredictorSingleModel(model_folder)
         return predictor
 
     @pytest.mark.parametrize("sentence, expected", SENTENCE_LISTS_CASES)

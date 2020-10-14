@@ -6,7 +6,7 @@ import transformers
 import os
 from codebase.log import logger
 from codebase.util import print_classification
-from codebase.model.model_predictor import ModelPredictor
+from codebase.model.model_predictor_single_model import ModelPredictorSingleModel
 from codebase.model.model_predictor_multimodel import ModelPredictorMultiModel
 
 
@@ -32,7 +32,7 @@ def main(sentence, save_folder, model_name, multimodel):
     else:
         # if it's the single model approach
         model_folder = os.path.join(save_folder, model_name)
-        predictor = ModelPredictor(model_folder)
+        predictor = ModelPredictorSingleModel(model_folder)
 
     tps = predictor.predict([sentence])
 

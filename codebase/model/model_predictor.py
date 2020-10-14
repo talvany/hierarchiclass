@@ -1,64 +1,33 @@
-import pickle
-import os
-import numpy as np
+from abc import ABC, abstractmethod
 import torch
-from tqdm import tqdm
-from transformers import XLNetForSequenceClassification
-from codebase.model.model_data_handler import get_dataloader, generate_dataloader_input
-from codebase.constants import BATCH_NUM
+import os
+import pickle
 from codebase.settings import LOOKUP_PKL_FILENAME
-from codebase.util import get_existing_tag2idx
-from codebase.log import logger
 
-class ModelPredictor:
 
+class ModelPredictor(ABC):
     def __init__(self, model_folder):
         self.model_folder = model_folder
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.hierarchy_lookup_dict = load_lookup_dict_from_pkl(LOOKUP_PKL_FILENAME)
 
     def predict(self, sentences):
-        self.tag2idx = get_existing_tag2idx(self.model_folder)
-        tag2name = {self.tag2idx[key]: key for key in self.tag2idx.keys()}
+        """
+        Get hierarchical predictions for sentences
+        :param sentences: the senteces
+        :return: tuples with the predictiosn
+        """
 
-        model = XLNetForSequenceClassification.from_pretrained(
-            self.model_folder, num_labels=len(tag2name)
-        )
-        model.to(self.device)
-        model.eval()
+        result = self.get_predictions(sentences)
 
-        logger.info("Setting input embedding")
+        result_list = result.label.to_list()
 
-        input, masks, segs = generate_dataloader_input(sentences)
-        dataloader = get_dataloader(input, masks, segs, BATCH_NUM)
-
-        nb_eval_steps, nb_eval_examples = 0, 0
-
-        y_predict = []
-        logger.info("Running evaluation...")
-
-        for step, batch in enumerate(dataloader):
-            batch = tuple(t.to(self.device) for t in batch)
-            b_input_ids, b_input_mask, b_segs = batch
-
-            with torch.no_grad():
-                outputs = model(
-                    input_ids=b_input_ids,
-                    token_type_ids=b_segs,
-                    input_mask=b_input_mask,
-                )
-                logits = outputs[0]
-
-            # Get text classification predict result
-            logits = logits.detach().cpu().numpy()
-
-            for predict in np.argmax(logits, axis=1):
-                y_predict.append(predict)
-
-            nb_eval_steps += 1
-
-        tps = [self.hierarchy_lookup_dict[tag2name[pred]] for pred in y_predict]
+        tps = [self.hierarchy_lookup_dict[pred] for pred in result_list]
         return tps
+
+    @abstractmethod
+    def get_predictions(self, sentences):
+        pass
 
 
 def load_lookup_dict_from_pkl(filename):
