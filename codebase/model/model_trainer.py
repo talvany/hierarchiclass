@@ -210,7 +210,7 @@ class ModelTrainer:
 
         with open(output_eval_file, "w") as writer:
             writer.write(results_string)
-            
+
 
     def get_reports(self, dataloader):
         logger.info("Loading model for evaluation...")
@@ -237,6 +237,9 @@ class ModelTrainer:
         logger.info("  Num examples ={}".format(len(dataloader.dataset)))
         logger.info("  Batch size = {}".format(BATCH_NUM))
         for step, batch in enumerate(dataloader):
+            if self.nb_tr_steps % 100 == 0:
+                logger.info(f"Step {self.nb_tr_steps}")
+
             batch = tuple(t.to(self.device) for t in batch)
             b_input_ids, b_input_mask, b_segs, b_labels = batch
 
@@ -285,8 +288,14 @@ class ModelTrainer:
 
 
     def get_printed_eval_results(self, general_metrics, report):
+        """
+        Get the result of the evaluation in a string to be printed
+        :param general_metrics: the general metrics
+        :param report: the classification report
+        :return:
+        """
         printed_eval_results = "----- Evaluation results -----"
         for key in sorted(general_metrics.keys()):
             printed_eval_results += "\n  %s = %s" % (key, str(general_metrics[key]))
-        printed_eval_results += "\n{report}"
-
+        printed_eval_results += f"\n{report}"
+        return printed_eval_results

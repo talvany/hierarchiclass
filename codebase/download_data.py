@@ -7,9 +7,11 @@ This module downloads data for data training:
 import click
 import wget
 import gdown
+import tarfile
+import os
 
 
-def download_data(gdrive_ids, download_xlnet=True):
+def download_data(gdrive_ids, download_xlnet=True, multimodel=False):
     if download_xlnet:
         path_base = (
             "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-base-cased"
@@ -22,6 +24,17 @@ def download_data(gdrive_ids, download_xlnet=True):
             wget.download(
                 f"{path_base}-{name}", out=f"../models/xlnet-base-cased/{name}"
             )
+    if multimodel:
+        doc_id = '1-hvWGEeRECSK8WQPwfzjlSePf3MUjFnI'
+        directory = "../models/out/"
+        file_name = "multiclass.tar.gz"
+        file_path = os.path.join(directory, file_name)
+
+        url = f"https://drive.google.com/uc?id={doc_id}"
+        gdown.download(url, file_path, quiet=False)
+
+        with tarfile.open(file_path) as my_tar:
+            my_tar.extractall(directory)
 
     for doc_id, output in gdrive_ids:
         url = f"https://drive.google.com/uc?id={doc_id}"
@@ -43,7 +56,7 @@ def main():
         # ("1dKL9O6W75s3qsVQw56C8T8XeeAKIY4ir", "../data/training_c7.csv"),
         # ("1vAhqiJXBTHp2sb4fOegJrKhZzM3RIGYc", "../data/training_balanced.csv"),
     ]
-    download_data(gdrive_ids, download_xlnet=True)
+    download_data(gdrive_ids, download_xlnet=True, multimodel=False)
     print("Finished downloading data")
 
 
