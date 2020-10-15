@@ -29,7 +29,7 @@ from codebase.model.predictor_single_model import ModelPredictorSingleModel
 )
 @click.option(
     "--label-column-name",
-    default="labels",
+    default="l3",
     help="The name of the column containing the labels",
     type=click.STRING,
 )
