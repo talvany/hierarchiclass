@@ -85,7 +85,8 @@ def download_xlnet_data(full=True):
         logger.info(f"Downloading {name} for xlnet")
         out_path = os.path.join(XLNET_BASE_PATH, name)
 
-        wget.download(f"{path_base}-{name}", out=out_path)
+        if not os.path.isfile(out_path):
+            wget.download(f"{path_base}-{name}", out=out_path)
 
 
 @click.command()
