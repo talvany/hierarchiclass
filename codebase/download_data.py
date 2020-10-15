@@ -7,7 +7,7 @@ import gdown
 import tarfile
 import os
 from codebase.log import logger
-from codebase.settings import DATA_PATH, OUT_MODELS_PATH
+from codebase.settings import DATA_PATH, OUT_MODELS_PATH, XLNET_BASE_PATH
 
 
 # the ids of the gdrive files for different modes
@@ -83,7 +83,9 @@ def download_xlnet_data(full=True):
 
     for name in filenames:
         logger.info(f"Downloading {name} for xlnet")
-        wget.download(f"{path_base}-{name}", out=f"../models/xlnet-base-cased/{name}")
+        out_path = os.path.join(XLNET_BASE_PATH, name)
+
+        wget.download(f"{path_base}-{name}", out=out_path")
 
 
 @click.command()
