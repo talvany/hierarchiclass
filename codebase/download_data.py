@@ -68,14 +68,18 @@ def download_and_extract(gdrive_ids):
             my_tar.extractall(directory)
 
 
-def download_xlnet_data():
+def download_xlnet_data(full=True):
     """
     Download data for xlnet training
+    :param full: whether to download all files or just the vocabulary
     :return:
     """
     path_base = "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-base-cased"
 
-    filenames = ["spiece.model", "pytorch_model.bin", "config.json"]
+    if full:
+        filenames = ["spiece.model", "pytorch_model.bin", "config.json"]
+    else:
+        filenames = ["spiece.model", "pytorch_model.bin", "config.json"]
 
     for name in filenames:
         logger.info(f"Downloading {name} for xlnet")
@@ -101,6 +105,9 @@ def main(mode):
 
     # download the main datasets in all modes
     download_gdrive_docs(GDRIVE_IDS["main_dataset"])
+
+    # Download the XLNet vocabulary
+    download_xlnet_data(full=False)
 
     if mode == "prediction_models_single":
         download_and_extract(GDRIVE_IDS["predict_single"])
