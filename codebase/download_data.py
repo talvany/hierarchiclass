@@ -79,7 +79,7 @@ def download_xlnet_data(full=True):
     if full:
         filenames = ["spiece.model", "pytorch_model.bin", "config.json"]
     else:
-        filenames = ["spiece.model", "pytorch_model.bin", "config.json"]
+        filenames = ["spiece.model"]
 
     for name in filenames:
         logger.info(f"Downloading {name} for xlnet")
