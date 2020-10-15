@@ -4,6 +4,8 @@
 
 This project consists of a hierarchical text classification task. 
 
+![alt text](misc/hierarchy.jpg)
+
 ## Usage
 
 First, make sure your requirements are installed and your env variables set:
@@ -19,30 +21,41 @@ python codebase/predict.py --sentence <SENTENCE> --save-folder models/out/ --mod
 ```
 
 
-To predict a model using the multi model approach:
+To predict a model using the multi model approach, you also need to download the relevant data:
 ```
+python codebase/download_data.py  --mode prediction_models_multi
 python codebase/predict.py --sentence <SENTENCE> --save-folder models/out/multimodel --multimodel True
 ```
 
 To train a model:
 ```
+python codebase/download_data.py  --mode train_data_single
 python codebase/train.py --input-csv <INPUT_CSV> --save-folder <SAVE_FOLDER> --model-name <MODEL_NAME>
 ```
 
 To run evaluation for the single model approach on the test set:
+```
+python codebase/model/final_assessment.py --test-set data/test.csv --save-folder models/out/ --model-name balanced
+```
 
-python codebase/model/final_assessment.py --test-set data/test.csv --save-folder models/out/ --model-name balancedl3
+To run evaluation for the multi model approach on the test set:
+```
+python codebase/download_data.py  --mode prediction_models_multi
+python codebase/model/final_assessment.py --test-set data/test.csv --save-folder models/out/multimodel   --multimodel True
+```
 
-
-python codebase/model/final_assessment.py --test-set data/test.csv --save-folder models/out/multimodel  --multimodel True
+To run pytest:
+```
+pytest
+```
 
 ## Report
 
-1) Exploring the dataset 
+### Exploring the dataset 
 
 To see details about the data analysis carried out on the data and the chosen approach, check the first notebook in the notebooks directory ("1 - Analyse data.ipynb")
 
-2) Model selection
+### Model selection
 
 I decided to use [XLNet](https://arxiv.org/pdf/1906.08237.pdf) as my model architecture.
 
@@ -53,6 +66,17 @@ IMDb), so I knew it would yield good results.
 - The data provided for this project is similar to dbpedia data, which XLNet achieves the state of the art, so I had reason to believe that this would be a good choice.
 - On a personal note, I had not explored with XLNet in practice before, so I was curious to try.
 
-3) Results
 
-I tried a single model approach and a multi model approach to solve this problem. My initial hypothesis was that 
+### Results
+
+
+I tried a single model approach and a multi model approach to solve this problem. My initial hypothesis was that the multi model approach would perform better, although slower. However, as the table below shows, the single model approach with balance adjustments for the data performed slightly better. I believe this was at least partially due to error from multiple models getting accumulated. I report the results based on classification of the label in the third level using the weighted average of the metrics (see more details in the final_assessment.txt file both in /models/out/multimodel/ and in /models/out/balanced)
+
+| Approach | Precision | Recall | F1-score | 
+| --- | --- | --- | --- |
+| single model | 0.95 | 0.94 |  0.94 |
+| multi model | 0.94 | 0.93 |  0.93 |
+
+
+
+
