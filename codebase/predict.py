@@ -21,7 +21,7 @@ from codebase.model.model_predictor_multimodel import ModelPredictorMultiModel
     type=click.Path(),
 )
 @click.option(
-    "--model-name", required=True, help="The name given to the model", type=click.STRING
+    "--model-name", default=None, help="The name given to the model", type=click.STRING
 )
 @click.option('--multimodel', default=False,
               help="Whether to use the multimodel approach", type=click.BOOL)
