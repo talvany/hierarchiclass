@@ -100,6 +100,9 @@ class ModelPredictorMultiModel(ModelPredictor):
         logger.info(f"Running evaluation for {model_folder}...")
 
         for step, batch in enumerate(dataloader):
+            if self.nb_tr_steps % 100 == 0:
+                logger.info(f"Step {self.nb_tr_steps}")
+
             batch = tuple(t.to(self.device) for t in batch)
             b_input_ids, b_input_mask, b_segs = batch
 

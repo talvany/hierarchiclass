@@ -40,8 +40,6 @@ from codebase.model.predictor_single_model import ModelPredictorSingleModel
     type=click.BOOL,
 )
 def main(test_set, save_folder, model_name, label_column_name, multimodel):
-    # joins the path of the model folder
-
     test_df = pd.read_csv(test_set)
 
     sentences = test_df.text.to_list()
