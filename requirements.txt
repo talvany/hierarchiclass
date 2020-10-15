@@ -34,8 +34,8 @@ kiwisolver==1.2.0
 MarkupSafe
 matplotlib==3.3.2
 mistune==0.8.4
-mkl-fft
-mkl-random==1.1.1
+git+https://github.com/IntelPython/mkl_fft.git#egg=mkl_fft
+mkl-random
 mkl-service==2.3.0
 nbclient
 nbconvert

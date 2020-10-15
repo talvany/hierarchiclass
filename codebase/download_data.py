@@ -92,7 +92,7 @@ def download_xlnet_data(full=True):
 @click.command()
 @click.option(
     "--mode",
-    required=True,
+    default=None,
     help="The mode indicating what to download.",
     type=click.Choice(
         [

@@ -6,12 +6,17 @@ This project consists of a hierarchical text classification task.
 
 ![alt text](misc/hierarchy.jpg)
 
+## Requirements
+Python 3.6
+
 ## Usage
 
 First, make sure your requirements are installed and your env variables set:
 ```
 cd hierarchiclass
 export PYTHONPATH="."
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
 pip install -r requirements.txt
 ```
 
@@ -30,8 +35,10 @@ python codebase/predict.py --sentence <SENTENCE> --save-folder models/out/multim
 To train a model:
 ```
 python codebase/download_data.py  --mode train_data_single
-python codebase/train.py --input-csv <INPUT_CSV> --save-folder <SAVE_FOLDER> --model-name <MODEL_NAME>
+python codebase/train.py --input-csv data/training_balanced.csv --save-folder <SAVE_FOLDER> --model-name <MODEL_NAME>
 ```
+Attention: The input csv used in training was NOT the complete data. It was the result from the data split between training and test set plus undersampling to have a more well balanced dataset. 
+
 
 To run evaluation for the single model approach on the test set:
 ```
@@ -66,6 +73,11 @@ IMDb), so I knew it would yield good results.
 - The data provided for this project is similar to dbpedia data, which XLNet achieves the state of the art, so I had reason to believe that this would be a good choice.
 - On a personal note, I had not explored with XLNet in practice before, so I was curious to try.
 
+If I had more time, I would try to:
+
+- Collect more data for the classes that did not have a lot of samples.
+- Optimize the parameters in XLNet a bit more.
+- Try a different architecture altogether.
 
 ### Results
 
