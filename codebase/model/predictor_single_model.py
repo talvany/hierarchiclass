@@ -3,9 +3,9 @@ import numpy as np
 import torch
 import pandas as pd
 from transformers import XLNetForSequenceClassification
-from codebase.model.model_data_handler import get_dataloader, generate_dataloader_input
+from codebase.model.data_handler import get_dataloader, generate_dataloader_input
 from codebase.constants import BATCH_NUM
-from codebase.model.model_predictor import ModelPredictor
+from codebase.model.predictor import ModelPredictor
 from codebase.util import get_existing_tag2idx
 from codebase.log import logger
 

@@ -6,8 +6,8 @@ import transformers
 import os
 from codebase.log import logger
 from codebase.util import print_classification
-from codebase.model.model_predictor_single_model import ModelPredictorSingleModel
-from codebase.model.model_predictor_multimodel import ModelPredictorMultiModel
+from codebase.model.predictor_single_model import ModelPredictorSingleModel
+from codebase.model.predictor_multimodel import ModelPredictorMultiModel
 
 
 @click.command()

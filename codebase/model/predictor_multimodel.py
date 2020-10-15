@@ -3,8 +3,8 @@ import os
 import numpy as np
 import torch
 from transformers import XLNetForSequenceClassification
-from codebase.model.model_data_handler import get_dataloader, generate_dataloader_input
-from codebase.model.model_predictor import ModelPredictor
+from codebase.model.data_handler import get_dataloader, generate_dataloader_input
+from codebase.model.predictor import ModelPredictor
 from codebase.constants import BATCH_NUM
 from codebase.log import logger
 from codebase.util import get_existing_tag2idx

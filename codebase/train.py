@@ -3,7 +3,7 @@ Trains a model
 """
 import click
 import os
-from codebase.model.model_trainer import ModelTrainer
+from codebase.model.trainer import ModelTrainer
 
 
 @click.command()

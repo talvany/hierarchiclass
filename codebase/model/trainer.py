@@ -15,7 +15,7 @@ from codebase.constants import (
     PYTORCH_MODEL_NAME,
     BATCH_NUM,
 )
-from codebase.model.model_data_handler import get_inputs, get_dataloader, generate_dataloader_input
+from codebase.model.data_handler import get_inputs, get_dataloader, generate_dataloader_input
 from codebase.settings import XLNET_BASE_PATH
 from codebase.util import accuracy, get_existing_tag2idx
 from codebase.log import logger

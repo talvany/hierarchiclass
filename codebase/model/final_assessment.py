@@ -7,8 +7,9 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.metrics import classification_report
-from codebase.model.model_predictor_multimodel import ModelPredictorMultiModel
-from codebase.model.model_predictor_single_model import ModelPredictorSingleModel
+from codebase.model.predictor_multimodel import ModelPredictorMultiModel
+from codebase.model.predictor_single_model import ModelPredictorSingleModel
+
 
 @click.command()
 @click.option(
@@ -27,10 +28,17 @@ from codebase.model.model_predictor_single_model import ModelPredictorSingleMode
     "--model-name", default=None, help="The name given to the model", type=click.STRING
 )
 @click.option(
-    "--label-column-name", default="labels", help="The name of the column containing the labels", type=click.STRING
+    "--label-column-name",
+    default="labels",
+    help="The name of the column containing the labels",
+    type=click.STRING,
 )
-@click.option('--multimodel', default=False,
-              help="Whether to use the multimodel approach", type=click.BOOL)
+@click.option(
+    "--multimodel",
+    default=False,
+    help="Whether to use the multimodel approach",
+    type=click.BOOL,
+)
 def main(test_set, save_folder, model_name, label_column_name, multimodel):
     # joins the path of the model folder
 
@@ -53,7 +61,7 @@ def main(test_set, save_folder, model_name, label_column_name, multimodel):
     )
     print(class_report)
 
-    with open(os.path.join(model_folder, 'final_assessment.txt'), "w") as writer:
+    with open(os.path.join(model_folder, "final_assessment.txt"), "w") as writer:
         writer.write(class_report)
 
 
