@@ -1,6 +1,5 @@
 import pytest
 from codebase.test.test_case import SENTENCE_LISTS_CASES
-from codebase import predict
 from codebase.model.model_predictor_single_model import ModelPredictorSingleModel
 
 
