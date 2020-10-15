@@ -117,10 +117,10 @@ def main(mode):
         download_and_extract(GDRIVE_IDS["predict_multi"])
     elif mode == "train_data_single":
         download_xlnet_data()
-        download_gdrive_docs(GDRIVE_IDS["train_data_single_model"])
+        download_gdrive_docs(GDRIVE_IDS["train_single"])
     elif mode == "train_data_multi":
         download_xlnet_data()
-        download_gdrive_docs(GDRIVE_IDS["train_data_multi_model"])
+        download_gdrive_docs(GDRIVE_IDS["train_multi"])
 
     logger.info("Finished downloading all the data")
 
