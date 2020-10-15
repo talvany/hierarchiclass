@@ -62,7 +62,7 @@ def download_and_extract(gdrive_ids):
     for doc_id, directory, output_name in gdrive_ids:
         file_path = os.path.join(directory, output_name)
 
-        download_gdrive_docs([(doc_id, file_path)])
+        download_gdrive_docs([(doc_id, file_path, output_name)])
 
         logger.info(f"Extracting {file_path}")
         with tarfile.open(file_path) as my_tar:
